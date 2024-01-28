@@ -1,4 +1,5 @@
 package com.coursework.project.entity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,6 +34,7 @@ public class User {
     )
     private Set<Role> roles;
 
+    @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable(name = "users_restaurants",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),

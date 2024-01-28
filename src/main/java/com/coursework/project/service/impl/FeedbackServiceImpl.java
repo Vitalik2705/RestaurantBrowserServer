@@ -49,14 +49,15 @@ public class FeedbackServiceImpl implements FeedbackService {
         if (optionalRestaurant.isPresent()) {
             Restaurant restaurant = optionalRestaurant.get();
             feedback.setRestaurant(restaurant);
+            feedbackRepository.save(feedback);
+
+            calculateAndSaveRestaurantRating(restaurant);
+
+            return feedback;
         } else {
             throw new RestaurantNotFoundException("Restaurant with ID " + restaurantId + " not found");
         }
-
-        return feedbackRepository.save(feedback);
     }
-
-
 
     @Override
     public List<Feedback> getAllFeedbacks() {
@@ -76,6 +77,19 @@ public class FeedbackServiceImpl implements FeedbackService {
     public Feedback getFeedbackById(Long id) {
         Optional<Feedback> optionalFeedback = feedbackRepository.findById(id);
         return optionalFeedback.orElse(null);
+    }
+
+    private void calculateAndSaveRestaurantRating(Restaurant restaurant) {
+        List<Feedback> feedbackList = restaurant.getFeedbackList();
+        if (feedbackList != null && !feedbackList.isEmpty()) {
+            double averageRating = feedbackList.stream()
+                    .mapToDouble(Feedback::getRating)
+                    .average()
+                    .orElse(0.0);
+
+            restaurant.setRating(averageRating);
+            restaurantRepository.save(restaurant);
+        }
     }
 }
 

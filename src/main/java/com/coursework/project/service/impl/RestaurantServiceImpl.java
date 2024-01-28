@@ -55,6 +55,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         restaurant.setWebsite(restaurantDTO.getWebsite());
         restaurant.setMenu(restaurantDTO.getMenu());
         restaurant.setPopularityCount(restaurantDTO.getPopularityCount());
+
         ContactInfoDTO contactInfoDTO = restaurantDTO.getContactInfo();
         if (contactInfoDTO != null) {
             ContactInfo contactInfo = new ContactInfo();
