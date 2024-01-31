@@ -66,12 +66,21 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     @Override
     public boolean deleteFeedback(Long id) {
-        if (feedbackRepository.existsById(id)) {
+        Optional<Feedback> optionalFeedback = feedbackRepository.findById(id);
+
+        if (optionalFeedback.isPresent()) {
+            Feedback feedback = optionalFeedback.get();
             feedbackRepository.deleteById(id);
+            Restaurant restaurant = feedback.getRestaurant();
+
+            calculateAndSaveRestaurantRating(restaurant);
+
             return true;
         }
+
         return false;
     }
+
 
     @Override
     public Feedback getFeedbackById(Long id) {
