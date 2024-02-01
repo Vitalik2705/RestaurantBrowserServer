@@ -15,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -22,11 +23,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @AllArgsConstructor
 public class SpringSecurityConfig {
 
-    private UserDetailsService userDetailsService;
 
     private JwtAuthenticationEntryPoint authenticationEntryPoint;
 
     private JwtAuthenticationFilter authenticationFilter;
+
+    AuthenticationSuccessHandler OAuth2LoginSuccessHandler;
 
     @Bean
     public static PasswordEncoder passwordEncoder(){
@@ -36,21 +38,20 @@ public class SpringSecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
+
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests((authorize) -> {
-//                    authorize.requestMatchers(HttpMethod.POST, "/api/**").hasRole("ADMIN");
-//                    authorize.requestMatchers(HttpMethod.PUT, "/api/**").hasRole("ADMIN");
-//                    authorize.requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN");
-//                    authorize.requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "USER");
-//                    authorize.requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyRole("ADMIN", "USER");
-//                    authorize.requestMatchers(HttpMethod.GET, "/api/**").permitAll();
                     authorize.requestMatchers("/api/auth/**").permitAll();
                     authorize.requestMatchers("/api/restaurants/image/**").permitAll();
                     authorize.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
                     authorize.anyRequest().authenticated();
-                }).httpBasic(Customizer.withDefaults());
+                }).httpBasic(Customizer.withDefaults())
+                .oauth2Login(oath2 -> {
+                    oath2.loginPage("http://localhost:3000/login").permitAll();
+                    oath2.successHandler(OAuth2LoginSuccessHandler);
+                });
 
-        http.exceptionHandling( exception -> exception
+        http.exceptionHandling(exception -> exception
                 .authenticationEntryPoint(authenticationEntryPoint));
 
         http.addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -62,22 +63,4 @@ public class SpringSecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
-
-//    @Bean
-//    public UserDetailsService userDetailsService(){
-//
-//        UserDetails ramesh = User.builder()
-//                .username("ramesh")
-//                .password(passwordEncoder().encode("password"))
-//                .roles("USER")
-//                .build();
-//
-//        UserDetails admin = User.builder()
-//                .username("admin")
-//                .password(passwordEncoder().encode("admin"))
-//                .roles("ADMIN")
-//                .build();
-//
-//        return new InMemoryUserDetailsManager(ramesh, admin);
-//    }
 }

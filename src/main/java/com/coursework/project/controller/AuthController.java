@@ -7,15 +7,19 @@ import com.coursework.project.dto.RegisterDTO;
 import com.coursework.project.entity.Restaurant;
 import com.coursework.project.entity.User;
 import com.coursework.project.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 
 @AllArgsConstructor
@@ -74,5 +78,17 @@ public class AuthController {
     ) {
         authService.removeFavoriteRestaurant(userId, restaurantId);
         return ResponseEntity.status(HttpStatus.OK).body("Restaurant removed from favorites successfully.");
+    }
+
+    @GetMapping("/google")
+    public ResponseEntity<String> googleLogin() {
+        String redirectUri = "http://localhost:8081/api/auth/google";
+        String redirectUrl = "https://accounts.google.com/o/oauth2/auth" +
+                "?response_type=code" +
+                "&client_id=544610924580-s9dp8d7k7iosoh49s04bbu79346noai2.apps.googleusercontent.com" +
+                "&redirect_uri=" + redirectUri +
+                "&scope=openid%20profile%20email" +
+                "&state=some-random-state";
+        return ResponseEntity.ok("{\"redirectUrl\":\"" + redirectUrl + "\"}");
     }
 }
