@@ -80,15 +80,5 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body("Restaurant removed from favorites successfully.");
     }
 
-    @GetMapping("/google")
-    public ResponseEntity<String> googleLogin() {
-        String redirectUri = "http://localhost:8081/api/auth/google";
-        String redirectUrl = "https://accounts.google.com/o/oauth2/auth" +
-                "?response_type=code" +
-                "&client_id=544610924580-s9dp8d7k7iosoh49s04bbu79346noai2.apps.googleusercontent.com" +
-                "&redirect_uri=" + redirectUri +
-                "&scope=openid%20profile%20email" +
-                "&state=some-random-state";
-        return ResponseEntity.ok("{\"redirectUrl\":\"" + redirectUrl + "\"}");
-    }
+
 }
