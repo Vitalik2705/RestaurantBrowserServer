@@ -59,8 +59,14 @@ public class AuthController {
 
         if (user != null) {
             List<Restaurant> favoriteRestaurants = user.getRestaurants();
+
+            int start = page * size;
+            int end = Math.min((page + 1) * size, favoriteRestaurants.size());
+
+            List<Restaurant> pageContent = favoriteRestaurants.subList(start, end);
+
             Pageable pageable = PageRequest.of(page, size);
-            Page<Restaurant> favoriteRestaurantsPage = new PageImpl<>(favoriteRestaurants, pageable, favoriteRestaurants.size());
+            Page<Restaurant> favoriteRestaurantsPage = new PageImpl<>(pageContent, pageable, favoriteRestaurants.size());
             return new ResponseEntity<>(favoriteRestaurantsPage, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
