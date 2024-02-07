@@ -8,10 +8,9 @@ import com.coursework.project.entity.User;
 import com.coursework.project.repository.RestaurantRepository;
 import com.coursework.project.repository.UserRepository;
 import com.coursework.project.security.JwtTokenProvider;
+import com.coursework.project.logging.CustomLogger;
 import com.coursework.project.service.AuthService;
 import lombok.AllArgsConstructor;
-import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,10 +19,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 @AllArgsConstructor
@@ -37,81 +34,111 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponseDTO login(LoginDTO loginDto) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                    loginDto.getEmail(),
+                    loginDto.getPassword()
+            ));
 
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                loginDto.getEmail(),
-                loginDto.getPassword()
-        ));
+            var user = userRepository.findByEmail(loginDto.getEmail())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        var user = userRepository.findByEmail(loginDto.getEmail())
-                .orElseThrow();
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+            String token = jwtTokenProvider.generateToken(user);
 
-        String token = jwtTokenProvider.generateToken(user);
-
-        // Return AuthResponseDTO with the token
-        return AuthResponseDTO.builder()
-                .token(token)
-                .userId(user.getId())
-                .build();
+            CustomLogger.logInfo("AuthServiceImpl User logged in successfully");
+            // Return AuthResponseDTO with the token
+            return AuthResponseDTO.builder()
+                    .token(token)
+                    .userId(user.getId())
+                    .build();
+        } catch (Exception e) {
+            CustomLogger.logError("AuthServiceImpl Error during login: " + e.getMessage());
+            throw e; // Rethrow the exception for Spring to handle
+        }
     }
 
     @Override
     public AuthResponseDTO register(RegisterDTO registerDto) {
-        // Check if the user already exists
-        if (userRepository.existsByEmail(registerDto.getEmail())) {
-            throw new RuntimeException("Email already in use");
+        try {
+            if (userRepository.existsByEmail(registerDto.getEmail())) {
+                CustomLogger.logError("AuthServiceImpl Email already in use");
+                throw new RuntimeException("Email already in use");
+            }
+
+            // Map RegisterDTO to User entity
+            User user = mapRegisterDtoToUser(registerDto);
+
+            // Encode and set the password
+            String encodedPassword = passwordEncoder.encode(registerDto.getPassword());
+            user.setPassword(encodedPassword);
+
+            // Save the user
+            userRepository.save(user);
+
+            // Generate JWT token
+            String token = jwtTokenProvider.generateToken(user);
+
+            CustomLogger.logInfo("AuthServiceImpl User registered successfully");
+            // Return AuthResponseDTO with the token
+            return AuthResponseDTO.builder()
+                    .token(token)
+                    .userId(user.getId())
+                    .build();
+        } catch (Exception e) {
+            CustomLogger.logError("AuthServiceImpl Error during registration: " + e.getMessage());
+            throw e; // Rethrow the exception for Spring to handle
         }
-
-        // Map RegisterDTO to User entity
-        User user = mapRegisterDtoToUser(registerDto);
-
-        // Encode and set the password
-        String encodedPassword = passwordEncoder.encode(registerDto.getPassword());
-        user.setPassword(encodedPassword);
-
-        // Save the user
-        userRepository.save(user);
-
-        // Generate JWT token
-        String token = jwtTokenProvider.generateToken(user);
-
-        // Return AuthResponseDTO with the token
-        return AuthResponseDTO.builder()
-                .token(token)
-                .userId(user.getId())
-                .build();
     }
 
     @Override
     public User getUserById(Long id) {
-        Optional<User> optionalRestaurant = userRepository.findById(id);
-        return optionalRestaurant.orElse(null);
+        try {
+            CustomLogger.logInfo("AuthServiceImpl Retrieved user by ID: " + id);
+            Optional<User> optionalUser = userRepository.findById(id);
+            return optionalUser.orElse(null);
+        } catch (Exception e) {
+            CustomLogger.logError("AuthServiceImpl Error getting user by ID " + id + ": " + e.getMessage());
+            throw e; // Rethrow the exception for Spring to handle
+        }
     }
 
     @Override
     public void addFavoriteRestaurant(Long userId, Long restaurantId) {
-        User user = getUserById(userId);
-        Restaurant restaurant = restaurantRepository.findById(restaurantId)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found"));
+        try {
+            User user = getUserById(userId);
+            Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                    .orElseThrow(() -> new RuntimeException("Restaurant not found"));
 
-        List<Restaurant> favoriteRestaurants = user.getRestaurants();
-        favoriteRestaurants.add(restaurant);
-        user.setRestaurants(favoriteRestaurants);
+            List<Restaurant> favoriteRestaurants = user.getRestaurants();
+            favoriteRestaurants.add(restaurant);
+            user.setRestaurants(favoriteRestaurants);
 
-        userRepository.save(user);
+            userRepository.save(user);
+            CustomLogger.logInfo("AuthServiceImpl Restaurant added to favorites successfully");
+        } catch (Exception e) {
+            CustomLogger.logError("AuthServiceImpl Error adding restaurant to favorites: " + e.getMessage());
+            throw e; // Rethrow the exception for Spring to handle
+        }
     }
 
     @Override
     public void removeFavoriteRestaurant(Long userId, Long restaurantId) {
-        User user = getUserById(userId);
-        if (user != null) {
-            List<Restaurant> favoriteRestaurants = user.getRestaurants();
-            favoriteRestaurants.removeIf(restaurant -> restaurant.getRestaurantId().equals(restaurantId));
-            user.setRestaurants(favoriteRestaurants);
-            userRepository.save(user);
-        } else {
-            throw new RuntimeException("User not found");
+        try {
+            User user = getUserById(userId);
+            if (user != null) {
+                List<Restaurant> favoriteRestaurants = user.getRestaurants();
+                favoriteRestaurants.removeIf(restaurant -> restaurant.getRestaurantId().equals(restaurantId));
+                user.setRestaurants(favoriteRestaurants);
+                userRepository.save(user);
+                CustomLogger.logInfo("AuthServiceImpl Restaurant removed from favorites successfully");
+            } else {
+                CustomLogger.logError("AuthServiceImpl User not found");
+                throw new RuntimeException("User not found");
+            }
+        } catch (Exception e) {
+            CustomLogger.logError("AuthServiceImpl Error removing restaurant from favorites: " + e.getMessage());
+            throw e; // Rethrow the exception for Spring to handle
         }
     }
 
