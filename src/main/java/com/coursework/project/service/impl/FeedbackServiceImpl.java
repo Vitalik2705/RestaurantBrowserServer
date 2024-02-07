@@ -4,6 +4,7 @@ import com.coursework.project.dto.FeedbackDTO;
 import com.coursework.project.entity.Feedback;
 import com.coursework.project.entity.Restaurant;
 import com.coursework.project.entity.User;
+import com.coursework.project.logging.CustomLogger;
 import com.coursework.project.repository.FeedbackRepository;
 import com.coursework.project.repository.RestaurantRepository;
 import com.coursework.project.repository.UserRepository;
@@ -29,75 +30,106 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     @Override
     public Feedback createFeedback(FeedbackDTO feedbackDTO, Long restaurantId, Long userId) {
-        Feedback feedback = new Feedback();
-        feedback.setRating(feedbackDTO.getRating());
-        feedback.setDescription(feedbackDTO.getDescription());
-        feedback.setAdvantages(feedbackDTO.getAdvantages());
-        feedback.setDisadvantages(feedbackDTO.getDisadvantages());
-        feedback.setDate(feedbackDTO.getDate());
+        try {
+            Feedback feedback = new Feedback();
+            feedback.setRating(feedbackDTO.getRating());
+            feedback.setDescription(feedbackDTO.getDescription());
+            feedback.setAdvantages(feedbackDTO.getAdvantages());
+            feedback.setDisadvantages(feedbackDTO.getDisadvantages());
+            feedback.setDate(feedbackDTO.getDate());
 
-        Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(restaurantId);
-        Optional<User> optionalUser = userRepository.findById(userId);
+            Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(restaurantId);
+            Optional<User> optionalUser = userRepository.findById(userId);
 
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            feedback.setUser(user);
-        } else {
-            throw new RuntimeException("User with ID " + userId + " not found");
-        }
+            if (optionalUser.isPresent()) {
+                User user = optionalUser.get();
+                feedback.setUser(user);
+            } else {
+                CustomLogger.logError("FeedbackServiceImpl User with ID " + userId + " not found");
+                throw new RuntimeException("User with ID " + userId + " not found");
+            }
 
-        if (optionalRestaurant.isPresent()) {
-            Restaurant restaurant = optionalRestaurant.get();
-            feedback.setRestaurant(restaurant);
-            feedbackRepository.save(feedback);
+            if (optionalRestaurant.isPresent()) {
+                Restaurant restaurant = optionalRestaurant.get();
+                feedback.setRestaurant(restaurant);
+                feedbackRepository.save(feedback);
 
-            calculateAndSaveRestaurantRating(restaurant);
+                calculateAndSaveRestaurantRating(restaurant);
 
-            return feedback;
-        } else {
-            throw new RestaurantNotFoundException("Restaurant with ID " + restaurantId + " not found");
+                CustomLogger.logInfo("FeedbackServiceImpl Feedback created successfully");
+                return feedback;
+            } else {
+                CustomLogger.logError("FeedbackServiceImpl Restaurant with ID " + restaurantId + " not found");
+                throw new RestaurantNotFoundException("Restaurant with ID " + restaurantId + " not found");
+            }
+        } catch (Exception e) {
+            CustomLogger.logError("Error creating feedback: " + e.getMessage());
+            throw e; // Rethrow the exception for Spring to handle
         }
     }
 
     @Override
     public List<Feedback> getAllFeedbacks() {
-        return feedbackRepository.findAll();
+        try {
+            List<Feedback> feedbacks = feedbackRepository.findAll();
+            CustomLogger.logInfo("FeedbackServiceImpl Retrieved all feedbacks successfully");
+            return feedbacks;
+        } catch (Exception e) {
+            CustomLogger.logError("FeedbackServiceImpl Error getting all feedbacks: " + e.getMessage());
+            throw e; // Rethrow the exception for Spring to handle
+        }
     }
 
     @Override
     public boolean deleteFeedback(Long id) {
-        Optional<Feedback> optionalFeedback = feedbackRepository.findById(id);
+        try {
+            Optional<Feedback> optionalFeedback = feedbackRepository.findById(id);
 
-        if (optionalFeedback.isPresent()) {
-            Feedback feedback = optionalFeedback.get();
-            feedbackRepository.deleteById(id);
-            Restaurant restaurant = feedback.getRestaurant();
+            if (optionalFeedback.isPresent()) {
+                Feedback feedback = optionalFeedback.get();
+                feedbackRepository.deleteById(id);
+                Restaurant restaurant = feedback.getRestaurant();
 
-            calculateAndSaveRestaurantRating(restaurant);
+                calculateAndSaveRestaurantRating(restaurant);
 
-            return true;
+                CustomLogger.logInfo("FeedbackServiceImpl Feedback deleted successfully");
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            CustomLogger.logError("FeedbackServiceImpl Error deleting feedback with ID " + id + ": " + e.getMessage());
+            throw e; // Rethrow the exception for Spring to handle
         }
-
-        return false;
     }
-
 
     @Override
     public Feedback getFeedbackById(Long id) {
-        Optional<Feedback> optionalFeedback = feedbackRepository.findById(id);
-        return optionalFeedback.orElse(null);
+        try {
+            CustomLogger.logInfo("FeedbackServiceImpl Retrieving feedback by ID: " + id);
+            Optional<Feedback> optionalFeedback = feedbackRepository.findById(id);
+            return optionalFeedback.orElse(null);
+        } catch (Exception e) {
+            CustomLogger.logError("FeedbackServiceImpl Error getting feedback with ID " + id + ": " + e.getMessage());
+            throw e; // Rethrow the exception for Spring to handle
+        }
     }
 
     private void calculateAndSaveRestaurantRating(Restaurant restaurant) {
-        List<Feedback> feedbackList = restaurant.getFeedbackList();
-        if (feedbackList != null && !feedbackList.isEmpty()) {
-            double averageRating = feedbackList.stream()
-                    .mapToDouble(Feedback::getRating)
-                    .average()
-                    .orElse(0.0);
+        try {
+            List<Feedback> feedbackList = restaurant.getFeedbackList();
+            if (feedbackList != null && !feedbackList.isEmpty()) {
+                double averageRating = feedbackList.stream()
+                        .mapToDouble(Feedback::getRating)
+                        .average()
+                        .orElse(0.0);
 
-            restaurant.setRating(averageRating);
-            restaurantRepository.save(restaurant);
+                restaurant.setRating(averageRating);
+                restaurantRepository.save(restaurant);
+            }
+            CustomLogger.logInfo("FeedbackServiceImpl Restaurant rating calculated and saved successfully");
+        } catch (Exception e) {
+            CustomLogger.logError("FeedbackServiceImpl Error calculating and saving restaurant rating: " + e.getMessage());
+            throw e; // Rethrow the exception for Spring to handle
         }
     }
 }
