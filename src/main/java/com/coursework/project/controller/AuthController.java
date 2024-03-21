@@ -4,6 +4,7 @@ import com.coursework.project.dto.AuthResponseDTO;
 import com.coursework.project.dto.LoginDTO;
 import com.coursework.project.dto.RegisterDTO;
 import com.coursework.project.entity.Restaurant;
+import com.coursework.project.entity.Role;
 import com.coursework.project.entity.User;
 import com.coursework.project.logging.CustomLogger;
 import com.coursework.project.service.AuthService;
@@ -118,6 +119,23 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.OK).body("Restaurant removed from favorites successfully.");
         } catch (Exception e) {
             CustomLogger.logError("AuthController Error removing restaurant from favorites: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    @PatchMapping("/{userId}/add-role")
+    public ResponseEntity<?> addRoleToUser(
+            @PathVariable Long userId,
+            @RequestParam String role
+    ) {
+        try {
+            CustomLogger.logInfo("AuthController Adding role " + role + " to user with ID " + userId);
+            Role newRole = new Role();
+            newRole.setName(role);
+            authService.addRoleToUser(userId, newRole);
+            return ResponseEntity.status(HttpStatus.OK).body("Role added to user successfully.");
+        } catch (Exception e) {
+            CustomLogger.logError("AuthController Error adding role to user: " + e.getMessage());
             throw e;
         }
     }

@@ -4,6 +4,7 @@ import com.coursework.project.dto.AuthResponseDTO;
 import com.coursework.project.dto.LoginDTO;
 import com.coursework.project.dto.RegisterDTO;
 import com.coursework.project.entity.Restaurant;
+import com.coursework.project.entity.Role;
 import com.coursework.project.entity.User;
 import com.coursework.project.repository.RestaurantRepository;
 import com.coursework.project.repository.UserRepository;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @AllArgsConstructor
@@ -138,6 +140,31 @@ public class AuthServiceImpl implements AuthService {
             }
         } catch (Exception e) {
             CustomLogger.logError("AuthServiceImpl Error removing restaurant from favorites: " + e.getMessage());
+            throw e; // Rethrow the exception for Spring to handle
+        }
+    }
+
+    @Override
+    public void addRoleToUser(Long userId, Role role) {
+        try {
+            User user = getUserById(userId);
+            if (user != null) {
+                Set<Role> roles = user.getRoles();
+                if (!roles.contains(role)) {
+                    roles.add(role);
+                    user.setRoles(roles);
+                    userRepository.save(user);
+                    CustomLogger.logInfo("AuthServiceImpl Role added to user successfully");
+                } else {
+                    CustomLogger.logError("AuthServiceImpl User already has the role");
+                    throw new RuntimeException("User already has the role");
+                }
+            } else {
+                CustomLogger.logError("AuthServiceImpl User not found");
+                throw new RuntimeException("User not found");
+            }
+        } catch (Exception e) {
+            CustomLogger.logError("AuthServiceImpl Error adding role to user: " + e.getMessage());
             throw e; // Rethrow the exception for Spring to handle
         }
     }
