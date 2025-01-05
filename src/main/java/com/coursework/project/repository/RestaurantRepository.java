@@ -20,15 +20,17 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
     @Query("SELECT r FROM Restaurant r WHERE LOWER(r.name) LIKE LOWER(concat('%', :searchTerm, '%'))")
     Page<Restaurant> findByNameOrFirstLetter(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-    @Query("SELECT r FROM Restaurant r WHERE " +
-            "(:cities IS NULL OR LOWER(r.city) IN :cities) AND " +
-            "(:cuisines IS NULL OR LOWER(r.cuisineType) IN :cuisines) AND " +
-            "(:ratings IS NULL OR FUNCTION('ROUND', r.rating) IN :ratings)")
-    Page<Restaurant> searchByMultipleFields(
-            @Param("cities") List<String> cities,
-            @Param("cuisines") List<String> cuisines,
-            @Param("ratings") List<String> ratings,
-            Pageable pageable);
+  @Query("SELECT r FROM Restaurant r WHERE " +
+          "(:#{#cities.isEmpty()} = true OR LOWER(r.city) IN :cities) AND " +
+          "(:#{#cuisines.isEmpty()} = true OR LOWER(r.cuisineType) IN :cuisines) AND " +
+          "(:#{#ratings.isEmpty()} = true OR FUNCTION('ROUND', r.rating) IN :ratings) AND " +
+          "(:#{#priceCategories.isEmpty()} = true OR r.priceCategory IN :priceCategories)")
+  Page<Restaurant> searchByMultipleFields(
+          @Param("cities") List<String> cities,
+          @Param("cuisines") List<String> cuisines,
+          @Param("ratings") List<String> ratings,
+          @Param("priceCategories") List<String> priceCategories,
+          Pageable pageable);
 
     @Modifying
     @Query("UPDATE Restaurant r SET r.popularityCount = :newPopularityCount WHERE r.restaurantId = :restaurantId")

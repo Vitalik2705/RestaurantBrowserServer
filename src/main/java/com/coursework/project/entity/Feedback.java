@@ -2,11 +2,15 @@ package com.coursework.project.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import java.util.Date;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "feedback")
 public class Feedback {
@@ -45,67 +49,4 @@ public class Feedback {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    public Long getFeedbackId() {
-        return feedbackId;
-    }
-
-    public void setFeedbackId(Long feedbackId) {
-        this.feedbackId = feedbackId;
-    }
-
-    public double getRating() {
-        return rating;
-    }
-
-    public void setRating(double rating) {
-        this.rating = rating;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getAdvantages() {
-        return advantages;
-    }
-
-    public void setAdvantages(String advantages) {
-        this.advantages = advantages;
-    }
-
-    public String getDisadvantages() {
-        return disadvantages;
-    }
-
-    public void setDisadvantages(String disadvantages) {
-        this.disadvantages = disadvantages;
-    }
-
-    public Date getDate() {
-        return date;
-    }
-
-    public void setDate(Date date) {
-        this.date = date;
-    }
-
-    public Restaurant getRestaurant() {
-        return restaurant;
-    }
-
-    public void setRestaurant(Restaurant restaurant) {
-        this.restaurant = restaurant;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
 }
