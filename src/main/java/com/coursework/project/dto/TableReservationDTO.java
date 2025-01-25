@@ -1,16 +1,15 @@
 package com.coursework.project.dto;
 
 import com.coursework.project.entity.Reservation;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class DiningTableDTO {
-  @Min(value = 1, message = "Capacity must be at least 1")
+@AllArgsConstructor
+public class TableReservationDTO {
+  private Long tableId;
   private int capacity;
-
   private List<Reservation> reservations;
 }

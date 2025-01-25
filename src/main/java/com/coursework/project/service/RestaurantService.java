@@ -8,25 +8,28 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-
 public interface RestaurantService {
-    Restaurant createRestaurant(RestaurantDTO restaurantDTO);
+  Restaurant createRestaurant(RestaurantDTO restaurantDTO, Long userId);
 
-    Page<Restaurant> getAllRestaurants(int page, int size);
+  Page<Restaurant> getAllRestaurants(int page, int size);
 
-    boolean deleteRestaurant(Long id);
+  boolean deleteRestaurant(Long id);
 
-    Restaurant getRestaurantById(Long id);
+  Restaurant getRestaurantById(Long id);
 
-    String uploadPhoto(Long id, MultipartFile file);
+  String uploadPhoto(Long id, MultipartFile file);
 
-    Page<Restaurant> searchByNameOrFirstLetter(String searchTerm, Pageable pageable);
+  Page<Restaurant> searchByNameOrFirstLetter(String searchTerm, Pageable pageable);
 
-    Page<Restaurant> searchByMultipleFields(List<String> searchTerms, Pageable pageable);
+  Page<Restaurant> searchByMultipleFields(List<String> searchTerms, Pageable pageable);
 
-    void updatePopularityCount(Long restaurantId, int newPopularityCount);
+  void updatePopularityCount(Long restaurantId, int newPopularityCount);
 
-    Page<Restaurant> getAllRestaurantsSortedByRating(int page, int size);
+  Page<Restaurant> getAllRestaurantsSortedByRating(int page, int size);
 
-    Page<Restaurant> getAllRestaurantsSortedByPopularity(int page, int size);
+  Page<Restaurant> getAllRestaurantsSortedByPopularity(int page, int size);
+
+  List<Restaurant> getCreatedRestaurants(Long userId);
+
+  Restaurant updateRestaurant(Long restaurantId, RestaurantDTO restaurantDTO);
 }

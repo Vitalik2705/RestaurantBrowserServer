@@ -1,5 +1,6 @@
 package com.coursework.project.dto;
 
+import com.coursework.project.entity.Address;
 import com.coursework.project.entity.CuisineType;
 import com.coursework.project.entity.PriceCategory;
 import jakarta.validation.constraints.NotBlank;
@@ -21,8 +22,8 @@ public class RestaurantDTO {
 
   private List<String> photos;
 
-  @NotBlank(message = "Address cannot be blank")
-  private String address;
+  @NotNull
+  private AddressDTO address;
 
   private double rating;
 
@@ -30,9 +31,6 @@ public class RestaurantDTO {
 
   @NotNull(message = "Cuisine type cannot be null")
   private CuisineType cuisineType;
-
-  @NotBlank(message = "City cannot be blank")
-  private String city;
 
   private List<DiningTableDTO> diningTables;
 

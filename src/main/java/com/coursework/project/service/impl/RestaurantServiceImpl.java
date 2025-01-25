@@ -33,30 +33,49 @@ public class RestaurantServiceImpl implements RestaurantService {
   private final ContactInfoRepository contactInfoRepository;
   private final WorkHoursRepository workHoursRepository;
   private final DiningTableRepository diningTableRepository;
+  private final AddressRepository addressRepository;
+  private final UserRepository userRepository;
 
   public RestaurantServiceImpl(RestaurantRepository restaurantRepository, ContactInfoRepository contactInfoRepository,
-          WorkHoursRepository workHoursRepository, DiningTableRepository diningTableRepository) {
+          WorkHoursRepository workHoursRepository, DiningTableRepository diningTableRepository, AddressRepository addressRepository,
+          UserRepository userRepository) {
     this.restaurantRepository = restaurantRepository;
     this.contactInfoRepository = contactInfoRepository;
     this.workHoursRepository = workHoursRepository;
     this.diningTableRepository = diningTableRepository;
+    this.addressRepository = addressRepository;
+    this.userRepository = userRepository;
   }
 
   @Override
-  public Restaurant createRestaurant(RestaurantDTO restaurantDTO) {
+  public Restaurant createRestaurant(RestaurantDTO restaurantDTO, Long userId) {
     try {
+      User creator = userRepository.findById(userId)
+              .orElseThrow(() -> new RuntimeException("User not found"));
+
       Restaurant restaurant = new Restaurant();
       restaurant.setName(restaurantDTO.getName());
       restaurant.setDescription(restaurantDTO.getDescription());
       restaurant.setPhotos(restaurantDTO.getPhotos());
-      restaurant.setAddress(restaurantDTO.getAddress());
       restaurant.setRating(restaurantDTO.getRating());
       restaurant.setCuisineType(restaurantDTO.getCuisineType());
-      restaurant.setCity(restaurantDTO.getCity());
       restaurant.setWebsite(restaurantDTO.getWebsite());
       restaurant.setMenu(restaurantDTO.getMenu());
       restaurant.setPopularityCount(restaurantDTO.getPopularityCount());
       restaurant.setPriceCategory(restaurantDTO.getPriceCategory());
+      restaurant.setCreator(creator);
+
+      AddressDTO addressDTO = restaurantDTO.getAddress();
+      if (addressDTO != null) {
+        Address address = new Address();
+        address.setFormattedAddress(addressDTO.getFormattedAddress());
+        address.setLatitude(addressDTO.getLatitude());
+        address.setLongitude(addressDTO.getLongitude());
+        address.setCity(addressDTO.getCity());
+        address.setCountry(addressDTO.getCountry());
+        addressRepository.save(address);
+        restaurant.setAddress(address);
+      }
 
       ContactInfoDTO contactInfoDTO = restaurantDTO.getContactInfo();
       if (contactInfoDTO != null) {
@@ -70,24 +89,25 @@ public class RestaurantServiceImpl implements RestaurantService {
 
       List<WorkHoursDTO> workHoursDTOList = restaurantDTO.getWorkHours();
       if (workHoursDTOList != null) {
-        List<WorkHours> workHoursList = workHoursDTOList.stream().map(workHoursDTO -> {
+        for (WorkHoursDTO workHoursDTO : workHoursDTOList) {
           WorkHours workHours = new WorkHours();
           workHours.setDayOfWeek(workHoursDTO.getDayOfWeek());
           workHours.setStartTime(workHoursDTO.getStartTime());
           workHours.setEndTime(workHoursDTO.getEndTime());
+          workHours.setDayOff(workHoursDTO.isDayOff() ? workHoursDTO.isDayOff() : false);
           workHours.setRestaurant(restaurant);
-          return workHoursRepository.save(workHours);
-        }).toList();
+          workHoursRepository.save(workHours);
+        }
       }
 
       List<DiningTableDTO> diningTableDTOList = restaurantDTO.getDiningTables();
       if (diningTableDTOList != null) {
-        List<DiningTable> diningTableList = diningTableDTOList.stream().map(diningTableDTO -> {
+        for(DiningTableDTO diningTableDTO : diningTableDTOList) {
           DiningTable diningTable = new DiningTable();
           diningTable.setCapacity(diningTableDTO.getCapacity());
           diningTable.setRestaurant(restaurant);
-          return diningTableRepository.save(diningTable);
-        }).toList();
+          diningTableRepository.save(diningTable);
+        }
       }
 
       CustomLogger.logInfo("RestaurantServiceImpl Restaurant created successfully: " + restaurant.getName());
@@ -253,6 +273,86 @@ public class RestaurantServiceImpl implements RestaurantService {
       return restaurantRepository.findAll(pageable);
     } catch (Exception e) {
       CustomLogger.logError("RestaurantServiceImpl Error getting restaurants sorted by popularity: " + e.getMessage());
+      throw e;
+    }
+  }
+
+  public List<Restaurant> getCreatedRestaurants(Long userId) {
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    return user.getCreatedRestaurants();
+  }
+
+  @Override
+  public Restaurant updateRestaurant(Long restaurantId, RestaurantDTO restaurantDTO) {
+    try {
+      Restaurant existingRestaurant = restaurantRepository.findById(restaurantId)
+              .orElseThrow(() -> new RuntimeException("Restaurant not found"));
+
+      existingRestaurant.setName(restaurantDTO.getName());
+      existingRestaurant.setDescription(restaurantDTO.getDescription());
+      existingRestaurant.setCuisineType(restaurantDTO.getCuisineType());
+      existingRestaurant.setWebsite(restaurantDTO.getWebsite());
+      existingRestaurant.setMenu(restaurantDTO.getMenu());
+      existingRestaurant.setPriceCategory(restaurantDTO.getPriceCategory());
+
+      AddressDTO addressDTO = restaurantDTO.getAddress();
+      if (addressDTO != null) {
+        Address address = existingRestaurant.getAddress();
+        if (address == null) {
+          address = new Address();
+        }
+        address.setFormattedAddress(addressDTO.getFormattedAddress());
+        address.setLatitude(addressDTO.getLatitude());
+        address.setLongitude(addressDTO.getLongitude());
+        address.setCity(addressDTO.getCity());
+        address.setCountry(addressDTO.getCountry());
+        addressRepository.save(address);
+        existingRestaurant.setAddress(address);
+      }
+
+      ContactInfoDTO contactInfoDTO = restaurantDTO.getContactInfo();
+      if (contactInfoDTO != null) {
+        ContactInfo contactInfo = existingRestaurant.getContactInfo();
+        if (contactInfo == null) {
+          contactInfo = new ContactInfo();
+        }
+        contactInfo.setPhoneNumber(contactInfoDTO.getPhoneNumber());
+        contactInfo.setEmail(contactInfoDTO.getEmail());
+        contactInfoRepository.save(contactInfo);
+        existingRestaurant.setContactInfo(contactInfo);
+      }
+
+      if (restaurantDTO.getWorkHours() != null) {
+        workHoursRepository.deleteByRestaurant(existingRestaurant);
+
+        for (WorkHoursDTO workHoursDTO : restaurantDTO.getWorkHours()) {
+          WorkHours workHours = new WorkHours();
+          workHours.setDayOfWeek(workHoursDTO.getDayOfWeek());
+          workHours.setStartTime(workHoursDTO.getStartTime());
+          workHours.setEndTime(workHoursDTO.getEndTime());
+          workHours.setDayOff(workHoursDTO.isDayOff());
+          workHours.setRestaurant(existingRestaurant);
+          workHoursRepository.save(workHours);
+        }
+      }
+
+      if (restaurantDTO.getDiningTables() != null) {
+        diningTableRepository.deleteByRestaurant(existingRestaurant);
+
+        for (DiningTableDTO diningTableDTO : restaurantDTO.getDiningTables()) {
+          DiningTable diningTable = new DiningTable();
+          diningTable.setCapacity(diningTableDTO.getCapacity());
+          diningTable.setRestaurant(existingRestaurant);
+          diningTableRepository.save(diningTable);
+        }
+      }
+
+      CustomLogger.logInfo("RestaurantServiceImpl Restaurant updated successfully: " + existingRestaurant.getName());
+      return restaurantRepository.save(existingRestaurant);
+    } catch (Exception e) {
+      CustomLogger.logError("RestaurantServiceImpl Error updating restaurant: " + e.getMessage());
       throw e;
     }
   }

@@ -35,11 +35,11 @@ public class RestaurantController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping
-    public ResponseEntity<Restaurant> createRestaurant(@RequestBody @Valid RestaurantDTO restaurantDTO) {
+    @PostMapping("/{userId}")
+    public ResponseEntity<Restaurant> createRestaurant(@RequestBody @Valid RestaurantDTO restaurantDTO, @PathVariable Long userId) {
         try {
             CustomLogger.logInfo("RestaurantController Creating a new restaurant: " + restaurantDTO.getName());
-            Restaurant createdRestaurant = restaurantService.createRestaurant(restaurantDTO);
+            Restaurant createdRestaurant = restaurantService.createRestaurant(restaurantDTO, userId);
             return new ResponseEntity<>(createdRestaurant, HttpStatus.CREATED);
         } catch (Exception e) {
             CustomLogger.logError("RestaurantController Error creating restaurant: " + e.getMessage());
@@ -175,5 +175,25 @@ public class RestaurantController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+  @GetMapping("/created/{userId}")
+  public ResponseEntity<List<Restaurant>> getCreatedRestaurants(@PathVariable Long userId) {
+    return ResponseEntity.ok(restaurantService.getCreatedRestaurants(userId));
+  }
+
+  @PreAuthorize("hasRole('ADMIN')")
+  @PutMapping("/{id}")
+  public ResponseEntity<Restaurant> updateRestaurant(
+          @PathVariable Long id,
+          @RequestBody @Valid RestaurantDTO restaurantDTO) {
+    try {
+      CustomLogger.logInfo("RestaurantController Updating restaurant with ID: " + id);
+      Restaurant updatedRestaurant = restaurantService.updateRestaurant(id, restaurantDTO);
+      return new ResponseEntity<>(updatedRestaurant, HttpStatus.OK);
+    } catch (Exception e) {
+      CustomLogger.logError("RestaurantController Error updating restaurant with ID " + id + ": " + e.getMessage());
+      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
 }
 

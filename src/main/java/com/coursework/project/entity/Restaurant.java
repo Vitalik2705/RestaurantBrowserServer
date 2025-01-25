@@ -1,5 +1,6 @@
 package com.coursework.project.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -25,10 +26,10 @@ public class Restaurant {
   @ElementCollection
   @Column(name = "photos")
   private List<String> photos = new ArrayList<>();
-  ;
 
-  @Column(name = "address", nullable = false)
-  private String address;
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "address_id")
+  private Address address;
 
   @Column(name = "rating")
   private double rating;
@@ -39,9 +40,6 @@ public class Restaurant {
   @Enumerated(EnumType.STRING)
   @Column(name = "cuisine_type")
   private CuisineType cuisineType;
-
-  @Column(name = "city", nullable = false)
-  private String city;
 
   @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL)
   private List<DiningTable> diningTables;
@@ -56,7 +54,7 @@ public class Restaurant {
   @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL)
   private List<Feedback> feedbackList;
 
-  @Column(name = "menu")
+  @Column(name = "menu", columnDefinition = "TEXT")
   private String menu;
 
   @Column(name = "popularity_count")
@@ -65,4 +63,9 @@ public class Restaurant {
   @Enumerated(EnumType.STRING)
   @Column(name = "price_category")
   private PriceCategory priceCategory;
+
+  @ManyToOne
+  @JoinColumn(name = "creator_id")
+  @JsonIgnore
+  private User creator;
 }
