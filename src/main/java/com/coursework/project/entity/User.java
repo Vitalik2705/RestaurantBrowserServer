@@ -44,4 +44,8 @@ public class User {
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
   @JsonIgnore
   private List<Reservation> reservations;
+
+  @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+  @JsonIgnore
+  private UserPreferences preferences;
 }

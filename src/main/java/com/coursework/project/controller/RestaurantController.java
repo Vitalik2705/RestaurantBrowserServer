@@ -103,7 +103,7 @@ public class RestaurantController {
             return Files.readAllBytes(Paths.get(PHOTO_DIRECTORY + filename));
         } catch (Exception e) {
             CustomLogger.logError("RestaurantController Error getting photo with filename " + filename + ": " + e.getMessage());
-            throw e; // Rethrow the exception for Spring to handle
+            throw e;
         }
     }
 
@@ -194,6 +194,15 @@ public class RestaurantController {
       CustomLogger.logError("RestaurantController Error updating restaurant with ID " + id + ": " + e.getMessage());
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @GetMapping("/recommended/{userId}")
+  public ResponseEntity<Page<Restaurant>> getRecommendedRestaurants(
+          @PathVariable Long userId,
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size) {
+    Page<Restaurant> recommendedRestaurants = restaurantService.getRecommendedRestaurants(userId, page, size);
+    return ResponseEntity.ok(recommendedRestaurants);
   }
 }
 

@@ -32,4 +32,6 @@ public interface RestaurantService {
   List<Restaurant> getCreatedRestaurants(Long userId);
 
   Restaurant updateRestaurant(Long restaurantId, RestaurantDTO restaurantDTO);
+
+  Page<Restaurant> getRecommendedRestaurants(Long userId, int page, int size);
 }

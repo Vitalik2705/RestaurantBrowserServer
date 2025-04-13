@@ -6,6 +6,7 @@ import com.coursework.project.logging.CustomLogger;
 import com.coursework.project.repository.*;
 import com.coursework.project.service.RestaurantService;
 import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 @Service
 @Transactional(rollbackOn = Exception.class)
+@AllArgsConstructor
 public class RestaurantServiceImpl implements RestaurantService {
 
   private final RestaurantRepository restaurantRepository;
@@ -35,17 +37,7 @@ public class RestaurantServiceImpl implements RestaurantService {
   private final DiningTableRepository diningTableRepository;
   private final AddressRepository addressRepository;
   private final UserRepository userRepository;
-
-  public RestaurantServiceImpl(RestaurantRepository restaurantRepository, ContactInfoRepository contactInfoRepository,
-          WorkHoursRepository workHoursRepository, DiningTableRepository diningTableRepository, AddressRepository addressRepository,
-          UserRepository userRepository) {
-    this.restaurantRepository = restaurantRepository;
-    this.contactInfoRepository = contactInfoRepository;
-    this.workHoursRepository = workHoursRepository;
-    this.diningTableRepository = diningTableRepository;
-    this.addressRepository = addressRepository;
-    this.userRepository = userRepository;
-  }
+  private final UserPreferencesRepository userPreferencesRepository;
 
   @Override
   public Restaurant createRestaurant(RestaurantDTO restaurantDTO, Long userId) {
@@ -255,12 +247,11 @@ public class RestaurantServiceImpl implements RestaurantService {
   public Page<Restaurant> getAllRestaurantsSortedByRating(int page, int size) {
     try {
       Pageable pageable = PageRequest.of(page, size, Sort.by("rating").descending());
-
       CustomLogger.logInfo("RestaurantServiceImpl Retrieved restaurants sorted by rating successfully");
       return restaurantRepository.findAll(pageable);
     } catch (Exception e) {
       CustomLogger.logError("RestaurantServiceImpl Error getting restaurants sorted by rating: " + e.getMessage());
-      throw e; // Rethrow the exception for the transaction to rollback
+      throw e;
     }
   }
 
@@ -354,6 +345,41 @@ public class RestaurantServiceImpl implements RestaurantService {
     } catch (Exception e) {
       CustomLogger.logError("RestaurantServiceImpl Error updating restaurant: " + e.getMessage());
       throw e;
+    }
+  }
+
+  @Override
+  public Page<Restaurant> getRecommendedRestaurants(Long userId, int page, int size) {
+    try {
+      UserPreferences preferences = userPreferencesRepository.findByUserId(userId)
+              .orElseThrow(() -> new RuntimeException("User preferences not found"));
+
+      Pageable pageable = PageRequest.of(page, size);
+
+      Set<CuisineType> cuisineTypes = preferences.getPreferredCuisines() != null &&
+              !preferences.getPreferredCuisines().isEmpty()
+              ? new HashSet<>(preferences.getPreferredCuisines())
+              : null;
+
+      Page<RestaurantScore> scoredRestaurants = restaurantRepository.findRecommendedRestaurantsWithScoring(
+              cuisineTypes,
+              preferences.getPricePreference(),
+              preferences.getMinimumRating(),
+              preferences.getCity(),
+              pageable
+      );
+
+      scoredRestaurants.forEach(score -> {
+        Restaurant restaurant = score.getRestaurant();
+        boolean isGoodMatch = score.getMatchScore() >= 70;
+        restaurant.setMatchesPreferences(isGoodMatch);
+        restaurantRepository.save(restaurant);
+      });
+
+      return scoredRestaurants.map(RestaurantScore::getRestaurant);
+    } catch (Exception e) {
+      CustomLogger.logError("RestaurantServiceImpl Error getting recommended restaurants: " + e.getMessage());
+      throw new RuntimeException("Error getting recommended restaurants", e);
     }
   }
 }

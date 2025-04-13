@@ -68,4 +68,7 @@ public class Restaurant {
   @JoinColumn(name = "creator_id")
   @JsonIgnore
   private User creator;
+
+  @Column(name = "matches_preferences")
+  private boolean matchesPreferences;
 }
