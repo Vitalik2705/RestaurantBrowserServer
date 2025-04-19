@@ -32,9 +32,9 @@ public class RandomDataGenerator implements CommandLineRunner {
   @Override
   @Transactional
   public void run(String... args) {
-    if (roleRepository.count() == 0) {
-      initializeData();
-    }
+//    if (roleRepository.count() == 0) {
+//      initializeData();
+//    }
   }
 
   private void initializeData() {
