@@ -31,7 +31,7 @@ public class CorsConfig {
   public CorsFilter corsFilter() {
     var urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
     var corsConfiguration = new CorsConfiguration();
-    corsConfiguration.setAllowCredentials(true);
+    corsConfiguration.setAllowCredentials(false);
     corsConfiguration.setAllowedOrigins(List.of("*"));
     corsConfiguration.setAllowedHeaders(
             List.of(ORIGIN, ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_TYPE, ACCEPT, AUTHORIZATION, X_REQUESTED_WITH, ACCESS_CONTROL_REQUEST_METHOD,
